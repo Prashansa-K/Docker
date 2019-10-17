@@ -97,7 +97,7 @@ Now, let's jump to Docker containers and see how they use this feature.
 ## Docker Containers and Auditing
 
 Let's check what login id we get, when we run the same command inside a docker container.
-![loginuid from inside fedora container]()
+![loginuid from inside fedora container](https://github.com/Prashansa-K/Docker/blob/master/Security/loginid-docker.PNG)
 
 The default loginuid of all processes (before their loginuid is set) is 4294967295. Since the container is instantiated by the Docker daemon and the Docker daemon is a child of the init system, we see that systemd, Docker daemon, and the container processes all have the same loginuid, 4294967295.
 
@@ -113,7 +113,7 @@ We have mounted our shadow file to docker container and touched it from the cont
 # ausearch -f /etc/shadow -i
 ```
 
-![Audit Trail is unset]()
+![Audit Trail is unset](https://github.com/Prashansa-K/Docker/blob/master/Security/fedora-shadow-touch-unset.PNG)
 
 Modify file contents from the container.
 
@@ -132,12 +132,29 @@ Now, check the contents of file from host system.
 # cat /etc/shadow
 ```
 
-![File contents changed]()
+![File contents changed](https://github.com/Prashansa-K/Docker/blob/master/Security/original-modified.PNG)
+
+This activity also leaves no identity source behind, which is a major security flaw.
 
 As the auid remains unset, a System Administrator can never find out who changed the concerned file.
 Note that no audit trail (no log - not even auid unset log) is added for mounting the file to the container as well. 
 
 ## Why does this happen?
+
+This is because of the architecture which Docker follows, that is, Server-Client Model in which the Docker Daemon acts as the server and is responsible for launching containers, when requested by the client. The daemon process starts as a child of init (the parent of all processes) and hence inherits the loginuid. All containers, started as the child of the daemon, inherit the same uid. 
+
+## Is this solvable?
+
+Well, we obviously can not change the architecture of Docker to resolve this issue. We need some other alternative to record the activities done to the file system from inside the container. Currently, I am not proposing any solution for this but would surely do in future if I think of something.
+
+## Any Alternative to Docker which doesn't have this Security Flaw?
+
+Yes, Podman by Red Hat. It works on a fork/execute model and hence takes up the loginuid of the user. All podman containers take up the same loginuid and hence, it is easier to trace the defaulter.
+
+## Contributor
+
+[Prashansa Kulshrestha](https://github.com/Prashansa-K)
+
 
 
 
