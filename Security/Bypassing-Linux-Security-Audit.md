@@ -25,6 +25,55 @@ Audit does not provide additional security to your system, rather, it helps trac
 In a Ubuntu-based system, this package can be downloaded as such:
 
 ```
-$ apt install auditd
+# apt install auditd
 ```
-![]
+![Install auditd](https://github.com/Prashansa-K/Docker/blob/master/Security/auditd-running.PNG)
+
+The service of auditd should automatically start. If it doesn't use the following commands:
+
+```
+# systemctl start auditd
+# systemctl status auditd
+```
+![View the Auditd service Running](https://github.com/Prashansa-K/Docker/blob/master/Security/auditd-running.PNG)
+Now, let's create a audit trail for /etc/shadow file. This is one of the most critical Linux files, as it saves the passwords of all Linux users. Though the passwords saved are hashed, it is essential to keep this file from getting compromised.
+
+```
+# auditctl -w /etc/shadow
+```
+
+This command inserts a 'watch' for the file /etc/shadow and would trace accesses or changes being done to the file.
+
+
+## Creating Audit Trails
+
+Now, let's try to modify this file - or just update the timestamp on it to experiment.
+
+```
+# touch /etc/shadow
+```
+
+To check the audit trail now, use `ausearch` command as such:
+
+```
+# ausearch -f /etc/shadow -i -ts recent
+```
+
+`ausearch` is a tool to query audit daemon logs. The option `-f` helps us to search for audit events for the filename specified. 
+The option `-i` is used to resolve the UID into usernames. `-ts` option allows us to add timestamps to filter events. You can specify proper timestamps or just use keywords like <b> today, now, recent, yesterday, this-week, etc. </b>
+
+![Audit Trail produced when root 'touched' the /etc/shadow file](https://github.com/Prashansa-K/Docker/blob/master/Security/ausearch-shadow.PNG)
+
+As you can see in the image, the uid and gid correspond to 'root'. But, auid (Audit UID) shows 'prashansa'. This is because I initially logged in as 'prashansa' user (not an administrative user) and then switched to root using 'su - root' command.
+Thus, the trail clearly depicts that initial process is owned by 'prashansa' user and /etc/shadow file is modified with the power of 'root' user.
+
+We can also touch the file from 'prashansa' user and check the audit trails again.
+
+![Audit trails after prashansa user 'touched' /etc/shadow file](https://github.com/Prashansa-K/Docker/blob/master/Security/ausearch-with-onlyprash.PNG)
+
+In this image, you can see that auid, uid and gid all point to 'prashansa' user.
+
+## How does this tracking occur?
+
+
+
