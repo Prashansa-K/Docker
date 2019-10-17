@@ -69,11 +69,29 @@ Thus, the trail clearly depicts that initial process is owned by 'prashansa' use
 
 We can also touch the file from 'prashansa' user and check the audit trails again.
 
-![Audit trails after prashansa user 'touched' /etc/shadow file](https://github.com/Prashansa-K/Docker/blob/master/Security/ausearch-with-onlyprash.PNG)
+![Audit trails after prashansa user 'touched' /etc/shadow file](https://github.com/Prashansa-K/Docker/blob/master/Security/ausearch-with-onlyprash.png)
 
 In this image, you can see that auid, uid and gid all point to 'prashansa' user.
 
 ## How does this tracking occur?
 
+There is a field called loginuid, stored in /proc/self/loginuid, that is part of the proc struct of every process on the system. This field can be set only once; after it is set, the kernel will not allow any process to reset it.
+
+So, whichever user you become using su command, this id will remain same.
+
+```
+# cat /proc/self/loginuid
+```
+
+Below images clearly depict that loginuid of both root and prashansa is 1000.
+
+![loginuid of root]()
+
+![loginuid of prashansa user]()
 
 
+Every process that is forked and executed from the initial login process automatically inherits this loginuid. This is how Linux kernel identifies that the person who logged was 'prashansa' user.
+
+Now, let's jump to Docker containers and see how they use this feature.
+
+## Docker Containers and Auditing
