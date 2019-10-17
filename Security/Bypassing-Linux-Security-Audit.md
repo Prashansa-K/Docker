@@ -85,9 +85,9 @@ So, whichever user you become using su command, this id will remain same.
 
 Below images clearly depict that loginuid of both root and prashansa is 1000.
 
-![loginuid of root]()
+![loginuid of root](https://github.com/Prashansa-K/Docker/blob/master/Security/loginid-root.PNG)
 
-![loginuid of prashansa user]()
+![loginuid of prashansa user](https://github.com/Prashansa-K/Docker/blob/master/Security/prash-loginuid.PNG)
 
 
 Every process that is forked and executed from the initial login process automatically inherits this loginuid. This is how Linux kernel identifies that the person who logged was 'prashansa' user.
@@ -95,3 +95,49 @@ Every process that is forked and executed from the initial login process automat
 Now, let's jump to Docker containers and see how they use this feature.
 
 ## Docker Containers and Auditing
+
+Let's check what login id we get, when we run the same command inside a docker container.
+![loginuid from inside fedora container]()
+
+The default loginuid of all processes (before their loginuid is set) is 4294967295. Since the container is instantiated by the Docker daemon and the Docker daemon is a child of the init system, we see that systemd, Docker daemon, and the container processes all have the same loginuid, 4294967295.
+
+How will this affect audit trail? Let's check.
+
+```
+# docker run --privileged -v /etc/shadow:/etc/shadow fedora touch /etc/shadow
+```
+
+We have mounted our shadow file to docker container and touched it from the container. Let's check the audit.
+
+```
+# ausearch -f /etc/shadow -i
+```
+
+![Audit Trail is unset]()
+
+Modify file contents from the container.
+
+Before modifying anything, please save the original file contents to some other file to avoid the loss, since /etc/shadow is a very important file for our Linux system. Without this, we will be locked out of our systems.
+
+```
+# cat /etc/shadow > shadowdup
+```
+
+```
+# docker run --privileged -v /etc/shadow:/etc/shadow fedora echo "hello world" >> /etc/shadow
+```
+Now, check the contents of file from host system.
+
+```
+# cat /etc/shadow
+```
+
+![File contents changed]()
+
+As the auid remains unset, a System Administrator can never find out who changed the concerned file.
+Note that no audit trail (no log - not even auid unset log) is added for mounting the file to the container as well. 
+
+## Why does this happen?
+
+
+
